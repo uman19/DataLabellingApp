@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AI Annotator</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <div id="landing-page">
+        <div class="landing-card">
+            <h2>AI Annotator</h2>
+            <button class="btn" id="btn-create-project">Create New Project</button>
+            <button class="btn btn-secondary" id="btn-open-project">Open Existing Project</button>
+        </div>
+    </div>
+
+    <div id="app">
+        <header>
+            <div class="header-group">
+                <button class="btn btn-secondary" style="padding: 6px 12px; margin:0;" id="btn-reset">Reset</button>
+                <button class="btn" style="padding: 6px 16px; margin:0;" id="btn-save">Save Data</button>
+            </div>
+            <div class="header-group">
+                <button class="btn btn-secondary" style="padding: 6px 12px; margin:0;" id="btn-toggle-labels">Hide Labels</button>
+            </div>
+            <div class="header-group">
+                <button class="btn btn-secondary" style="padding: 6px 12px; margin:0;" id="btn-theme-toggle">☀️ Light Mode</button>
+            </div>
+        </header>
+
+        <div class="workspace">
+            <aside class="left-tools">
+                <div class="tool-icon active" id="tool-draw" title="Draw Tool">Draw</div>
+                
+                <div class="shape-options" id="shape-selector">
+                    <label><input type="radio" name="shape" value="rectangle" checked> Rect</label>
+                    <label><input type="radio" name="shape" value="circle"> Circ</label>
+                </div>
+
+                <div class="tool-icon" id="tool-brush" title="Brush Tool">Brush</div>
+                <div class="tool-icon" id="tool-resize" title="Resize Tool">Resize</div>
+                <div class="tool-icon" id="tool-erase" title="Erase Tool">Erase</div>
+                <div class="tool-icon" id="tool-select" title="Select Tool">Select</div>
+                <input type="color" id="color-picker" value="#00ff00" title="Color Picker">
+            </aside>
+
+            <div class="resizer" id="resizer-left"></div>
+
+            <main class="center-area" id="drop-zone">
+                <div class="canvas-container" id="canvas-container">
+                    <div class="upload-overlay" id="upload-overlay">
+                        <h2 title="Click or Drag & Drop Images">⊕</h2>
+                        <p style="margin-top: 10px; color: var(--text-muted);">Click or Drag & Drop Images</p>
+                    </div>
+                    <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
+                    <canvas id="main-canvas" style="display:none;"></canvas>
+                </div>
+                <div class="bottom-toolbar">
+                    <label style="margin-right: 10px; font-weight: 500;">Zoom:</label>
+                    <input type="range" id="zoom-slider" min="10" max="300" value="100">
+                    <span id="zoom-val" style="margin-left: 10px; width: 45px; text-align: right;">100%</span>
+                </div>
+            </main>
+
+            <div class="resizer" id="resizer-right"></div>
+
+            <aside class="right-panels" id="right-panel">
+                <div class="panel">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Solution Explorer</span>
+                        <button id="btn-close-project" class="btn btn-secondary" style="margin: 0; padding: 2px 8px; font-size: 11px;" title="Save & Close Project">Close ✖</button>
+                    </div>
+                    <div class="panel-content" id="project-tree"><i style="color: var(--text-muted);">No project loaded.</i></div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Images</span>
+                        <button id="btn-add-images" class="btn btn-secondary" style="margin: 0; padding: 2px 8px; font-size: 11px;" title="Add More Images">Add ➕</button>
+                    </div>
+                    <div class="panel-content" id="image-list" style="padding: 0;">
+                        <div style="padding: 15px;"><i style="color: var(--text-muted);">No images available.</i></div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <div id="label-modal" class="modal-overlay">
+        <div class="landing-card" style="width: 320px; text-align: left; padding: 30px;">
+            <h3 style="margin-bottom: 20px;">Enter Label Category</h3>
+            <input type="text" id="label-input" class="modal-input" list="category-list" placeholder="Type or select from list...">
+            <datalist id="category-list"></datalist>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-secondary" id="btn-cancel-label" style="margin: 0;">Cancel</button>
+                <button class="btn" id="btn-confirm-label" style="margin: 0;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-modal" class="modal-overlay">
+        <!-- <div class="landing-card" style="width: 380px; text-align: left; padding: 30px;">
+            <h3 style="margin-bottom: 10px; text-align: center;">Save Annotations</h3>
+            <p style="font-size: 13px; margin-bottom: 20px; color: var(--text-muted); line-height: 1.4;">The original image will be copied to the respective category folders. How would you like to save the label data?</p>
+            
+            <div class="radio-group">
+                <label><input type="radio" name="save-type" value="baked" checked> <span><b>Option 1:</b> Save as a new image with labels painted on</span></label>
+                <label><input type="radio" name="save-type" value="text"> <span><b>Option 2:</b> Save as a separate .json text file</span></label>
+                <label><input type="radio" name="save-type" value="metadata"> <span><b>Option 3:</b> Save data internally to project .dla file</span></label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-secondary" id="btn-cancel-save" style="margin: 0;">Cancel</button>
+                <button class="btn" id="btn-confirm-save" style="margin: 0;">Save Now</button>
+            </div>
+        </div> -->
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
