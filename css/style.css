@@ -168,6 +168,41 @@ aside.right-panels { width: 280px; background: var(--bg-panel); border-left: 1px
 .radio-group label { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; }
 .radio-group input { margin-top: 3px; accent-color: var(--accent); }
 
+/* Add to style.css */
+.btn-zoom {
+    background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 8px; cursor: pointer; font-weight: bold;
+}
+.btn-zoom:hover { background: var(--hover); }
+
+/* Dropdowns & Filters */
+.dropdown { position: relative; display: inline-block; }
+.dropdown-content {
+    display: none; position: absolute; background-color: var(--bg-panel); min-width: 200px;
+    box-shadow: var(--shadow); z-index: 100; border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+}
+.dropdown-content.show { display: block; }
+.dropdown-content label { display: block; padding: 5px 0; cursor: pointer; font-size: 13px; }
+
+/* Inline Input */
+#inline-input-container {
+    display: none; position: absolute; z-index: 50; background: var(--bg-panel);
+    border: 1px solid var(--accent); border-radius: 4px; box-shadow: var(--shadow); padding: 5px;
+}
+#inline-input {
+    width: 150px; padding: 5px; background: var(--bg-dark); color: var(--text-main);
+    border: 1px solid var(--border); outline: none; border-radius: 2px;
+}
+#inline-dropdown {
+    list-style: none; margin: 0; padding: 0; max-height: 100px; overflow-y: auto; font-size: 12px;
+}
+#inline-dropdown li { padding: 5px; cursor: pointer; border-bottom: 1px solid var(--border); }
+#inline-dropdown li:hover { background: var(--hover); }
+
+/* Category Tree Items */
+.cat-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cat-item input[type="color"] { width: 20px; height: 20px; padding: 0; border: none; cursor: pointer; }
+
 .resizer {
     width: 6px;
     background: var(--bg-panel);

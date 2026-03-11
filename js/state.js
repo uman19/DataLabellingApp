@@ -1,25 +1,34 @@
 export const state = {
     projectHandle: null,
-    projectMetadata: { categories: [], folders: [] },
+    projectMetadata: { categories: [], folders: [], categoryColors: {} }, // Req 8
     imageFiles: [],
     currentImageIndex: -1,
     currentImageObj: null,
+    baseCanvas: null, // Req 10: Holds the actual image data so we can permanently blur it
     currentScale: 1,
     
     // Toolbar State
-    currentTool: 'draw', 
-    currentShape: 'rectangle',
+    currentTool: 'rect', // Req 4: Split tools
     currentColor: '#00ff00',
-    brushSize: 15, // NEW: Default brush size
+    brushSize: 15,
     showLabels: true,
+    textMode: false, // Req 9
     
     annotations: {},
     selectedAnnotations: [], 
     resizeSelection: null,
+    hiddenCategories: [], // Req 7
     
-    // NEW: Undo/Redo State
-    history: {},      // Stores arrays of snapshots per image index
-    historyStep: {},   // Tracks the current position in the history stack per image
+    // Undo/Redo State
+    history: {},      
+    historyStep: {},
+    savedHistoryStep: {},
 
-    activeCategory: 'create-new'
+    pendingDeletions: [],
+
+    activeCategory: 'create-new',
+
+    hiddenCategories: [], 
+    hideThreshold: 0,
+
 };
