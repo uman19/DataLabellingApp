@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { canvas, ctx, redrawCanvas, setupCanvasEvents, updateCursor, resizeOffscreenCanvas, saveHistory, undo, redo, updateProjectTreeUI, abortActiveDrawing } from './canvasEngine.js';
+import { canvas, ctx, redrawCanvas, setupCanvasEvents, updateCursor, resizeOffscreenCanvas, saveHistory, undo, redo, updateProjectTreeUI, abortActiveDrawing, getBounds } from './canvasEngine.js';
 
 // --- Theme Toggle Logic ---
 const themeBtn = document.getElementById('btn-theme-toggle');
@@ -477,7 +477,12 @@ async function saveAllData() {
                         if (ann.type === 'circ' || ann.type === 'circle') tempCtx.arc(ann.x, ann.y, ann.r, 0, 2 * Math.PI);
                         tempCtx.stroke();
                     } else if (ann.type === 'mask') {
-                        if (ann.cachedImg) { tempCtx.globalAlpha = 0.3; tempCtx.drawImage(ann.cachedImg, ann.x, ann.y); tempCtx.globalAlpha = 1.0; }
+                        // FIXED: Safely check for a valid image element during save
+                        if (ann.cachedImg && ann.cachedImg instanceof HTMLImageElement && ann.cachedImg.complete) { 
+                            tempCtx.globalAlpha = 0.3; 
+                            tempCtx.drawImage(ann.cachedImg, ann.x, ann.y); 
+                            tempCtx.globalAlpha = 1.0; 
+                        }
                     }
                 });
 
@@ -486,8 +491,58 @@ async function saveAllData() {
                 const bWrite = await bakedHandle.createWritable();
                 await bWrite.write(bakedBlob);
                 await bWrite.close();
+                
+                // --- NEW: YOLO and COCO EXPORTS ---
+                let yoloText = "";
+                let cocoArray = []; // COCO uses a JSON Array
+
+                catAnnotations.forEach(ann => {
+                    const b = getBounds(ann);
+                    
+                    // 1. Determine Class ID based on project categories array
+                    let classId = state.projectMetadata.categories.indexOf(ann.label);
+                    if (classId === -1 && ann.isText) classId = state.projectMetadata.categories.indexOf("Text OCR");
+                    if (classId === -1) classId = 0; // Fallback
+
+                    // 2. Ensure coordinates don't go outside image boundaries
+                    const safeX = Math.max(0, b.x);
+                    const safeY = Math.max(0, b.y);
+                    const safeW = Math.min(imgObj.width - safeX, b.w);
+                    const safeH = Math.min(imgObj.height - safeY, b.h);
+
+                    // 3. YOLO Format: <class_id> <x_center> <y_center> <width> <height> (Normalized 0 to 1)
+                    const xCenter = (safeX + safeW / 2) / imgObj.width;
+                    const yCenter = (safeY + safeH / 2) / imgObj.height;
+                    const normW = safeW / imgObj.width;
+                    const normH = safeH / imgObj.height;
+                    yoloText += `${classId} ${xCenter.toFixed(6)} ${yCenter.toFixed(6)} ${normW.toFixed(6)} ${normH.toFixed(6)}\n`;
+                    
+                    // 4. COCO Format (JSON Object): { "category_id": id, "bbox": [x, y, w, h] }
+                    cocoArray.push({
+                        category_id: classId,
+                        bbox: [Math.round(safeX), Math.round(safeY), Math.round(safeW), Math.round(safeH)]
+                    });
+                });
+
+                // Export YOLO (.txt)
+                if (yoloText) {
+                    const yoloHandle = await dirHandle.getFileHandle(`${baseName}_yolo.txt`, { create: true });
+                    const yWrite = await yoloHandle.createWritable();
+                    await yWrite.write(yoloText);
+                    await yWrite.close();
+                }
+
+                // Export COCO (.json)
+                if (cocoArray.length > 0) {
+                    const cocoHandle = await dirHandle.getFileHandle(`${baseName}_coco.json`, { create: true });
+                    const cWrite = await cocoHandle.createWritable();
+                    await cWrite.write(JSON.stringify(cocoArray, null, 2));
+                    await cWrite.close();
+                }
             } 
             
+            // --- RESTORED: Custom Annotator JSON Output ---
+            // This runs regardless of whether the image could be visually loaded
             const textData = JSON.stringify(catAnnotations, null, 2);
             const textHandle = await dirHandle.getFileHandle(`${baseName}.json`, { create: true });
             const tWrite = await textHandle.createWritable();
@@ -495,6 +550,7 @@ async function saveAllData() {
             await tWrite.close();
         }
 
+        // 5. Store Master Array in Memory
         state.projectMetadata.imageLabels = state.projectMetadata.imageLabels || {};
         state.projectMetadata.imageLabels[file.name] = annotations; 
         state.savedHistoryStep[i] = state.historyStep[i];
@@ -519,6 +575,13 @@ async function saveAllData() {
             const writable = await dlaHandle.createWritable();
             await writable.write(JSON.stringify(state.projectMetadata));
             await writable.close();
+            
+            // NEW: Export a master classes.txt file for your ML Pipeline
+            const classHandle = await state.projectHandle.getFileHandle('classes.txt', { create: true });
+            const classWrite = await classHandle.createWritable();
+            await classWrite.write(state.projectMetadata.categories.join('\n'));
+            await classWrite.close();
+            
         } catch (e) { console.error(e); }
     }
 
