@@ -142,7 +142,7 @@ function saveMaskHistory() {
     maskHistoryStep++;
 }
 
-function getBounds(ann) {
+export function getBounds(ann) {
     if (ann.type === 'rect' || ann.type === 'rectangle') return { x: ann.x, y: ann.y, w: ann.w, h: ann.h };
     if (ann.type === 'circ' || ann.type === 'circle') return { x: ann.x - ann.r, y: ann.y - ann.r, w: ann.r * 2, h: ann.r * 2 };
     if (ann.type === 'mask') return { x: ann.x, y: ann.y, w: ann.w, h: ann.h }; 
@@ -319,11 +319,14 @@ export function redrawCanvas() {
             } else if (ann.type === 'mask') {
                 offCtx.globalAlpha = 0.3;
                 if (typeof ann.imgData === 'string') {
-                    if (!ann.cachedImg) {
+                    // FIXED: Verify cachedImg is a real HTMLImageElement, not a corrupted JSON {} from Undo
+                    if (!ann.cachedImg || !(ann.cachedImg instanceof HTMLImageElement)) {
                         const img = new Image();
-                        img.onload = () => { ann.cachedImg = img; redrawCanvas(); };
+                        ann.cachedImg = img; // Set immediately to prevent render loops
+                        img.onload = () => redrawCanvas();
                         img.src = ann.imgData;
-                    } else {
+                    } else if (ann.cachedImg.complete) {
+                        // FIXED: Only draw if it has finished loading
                         offCtx.drawImage(ann.cachedImg, ann.x, ann.y);
                     }
                 }
